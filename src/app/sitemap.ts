@@ -16,19 +16,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 60 * 60 * 24 },
     },
   )
-  const dataPages: PagesType[] = await responsePages.json()
 
-  const pageEntries: MetadataRoute.Sitemap = dataPages.flatMap((item) => {
-    if (item.children.length > 0) {
+  const dataPages: PagesType[] = await responsePages.json().catch(() => [])
+
+  const pageEntries: MetadataRoute.Sitemap = (Array.isArray(dataPages) ? dataPages : []).flatMap((item) => {
+    if (Array.isArray(item.children) && item.children.length > 0) {
       return item.children.map((child) => ({
         url: `${process.env.NEXT_PUBLIC_BASE_URL}${child.slug}`,
-        lastModified: child.updated_at,
+        lastModified: child.updated_at || new Date().toISOString(),
       }))
     }
 
     return {
       url: `${process.env.NEXT_PUBLIC_BASE_URL}${item.slug}`,
-      lastModified: item.updated_at,
+      lastModified: item.updated_at || new Date().toISOString(),
     }
   })
   // END - GET PAGES
@@ -46,15 +47,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 60 * 60 * 24 },
     },
   )
-  const dataArticles: ListBlogArticlesType = await responseArticles.json()
 
-  const articlesEntries: MetadataRoute.Sitemap = dataArticles.data.flatMap(
-    (item) => {
-      return {
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}blog/${item.slug}`,
-        lastModified: item.created_at,
-      }
-    },
+  const dataArticles: ListBlogArticlesType = await responseArticles.json().catch(() => ({ data: [] }))
+
+  const articlesEntries: MetadataRoute.Sitemap = (Array.isArray(dataArticles.data) ? dataArticles.data : []).map(
+    (item) => ({
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}blog/${item.slug}`,
+      lastModified: item.created_at || new Date().toISOString(),
+    }),
   )
   // END - GET ARTICLES
 
